@@ -20,7 +20,7 @@ journaltext = res.content.decode('utf-8')
 
 delimiter = '####'
 
-# Extract entries
+# Extract the entries
 reg = re.compile(delimiter+'.*'+delimiter)
 entries = {}
 regexresults =  reg.finditer(journaltext)
