@@ -11,29 +11,34 @@ import time
 os.environ['TZ'] = 'America/Los_Angeles'
 time.tzset()
 
-# Access token
+# Dropbox login
 TOKEN = credentials.dropbox_token
-
 dbx = dropbox.Dropbox(TOKEN)
-md,res = dbx.files_download('/journal/journal.txt')
-journaltext = res.content.decode('utf-8')
 
-delimiter = '####'
+# Download journal
+md,response = dbx.files_download('/journal/journal.txt')
+journaltext = response.content.decode('utf-8')
+
 
 # Extract the entries
+## Find '#### YYYY-MM-DD ####' entry headers using regular expressions
+delimiter = '####'
 reg = re.compile(delimiter+'.*'+delimiter)
-entries = {}
-regexresults =  reg.finditer(journaltext)
-regexresults = [x for x in regexresults]
+header_regexresults_iterator =  reg.finditer(journaltext)
+header_regexresults = [x for x in header_regexresults_iterator]
 
-for i in range(len(regexresults)):
-	found = regexresults[i]
-	try:
-		end = regexresults[i+1].start()
-	except IndexError:
-		end = len(journaltext)
-	start = found.end()+1
-	entries[found.group()] = journaltext[start:end]
+## Create dictionary of entries, where each value is the text of an entry
+entries = {}
+for i in range(len(header_regexresults)):
+	header_regexresult = header_regexresults[i]
+	entry_start_index = header_regexresult.end()+1 # Entry starts after its header
+
+	if i != len(header_regexresults):
+		entry_end_index = header_regexresults[i+1].start() #beginning of the next entry's header
+	else: #catch the case where we are at the last entry
+		entry_end_index = len(journaltext)
+	entry_date_str = header_regexresult.group() #for the dictionary key, we use the header. This isn't actually used anywhere below
+	entries[entry_date_str] = journaltext[entry_start_index:entry_end_index] #put the entry string in dictionary
 
 # Check entries for validity
 def isvalidjournalentry(s):
@@ -51,20 +56,20 @@ print(validity_dict)
 
 # Send to beeminder
 params = {'auth_token':credentials.beeminder_token}
-r = requests.get('https://www.beeminder.com/api/v1/users/tmkadamcz/goals/journal/datapoints.json', params=params)
-datapoints = r.json()
+req = requests.get('https://www.beeminder.com/api/v1/users/tmkadamcz/goals/journal/datapoints.json', params=params)
+datapoints = req.json()
 
-# Delete the day's datapoint so we don't have to bother checking if it exists or not
+## Delete the day's datapoint so we don't have to bother checking if it exists or not
 for datapoint in datapoints:
 	daystamp = dparser.parse(datapoint['daystamp'],fuzzy=True).date()
 	if daystamp == date.today():
 		id = datapoint['id']
-		r = requests.delete(
+		requests.delete(
 			'https://www.beeminder.com/api/v1/users/tmkadamcz/goals/journal/datapoints/' + id + '.json',
 			params=params)
 
-# Send today's datapoint. Only check today's entry, so the user can't get credit on beeminder for retroactively
-# created journal entries
+## Send today's datapoint. Only check today's entry, so the user can't get credit on beeminder for retroactively
+## created journal entries
 for entry in validity_dict:
 	entrydate = dparser.parse(entry,fuzzy=True).date()
 	if entrydate == date.today():

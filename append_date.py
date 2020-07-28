@@ -8,17 +8,18 @@ import time
 os.environ['TZ'] = 'America/Los_Angeles'
 time.tzset()
 
-
-delimiter = '####'
-
+# Dropbox login
 TOKEN = credentials.dropbox_token
-
 dbx = dropbox.Dropbox(TOKEN)
-md,res = dbx.files_download('/journal/journal.txt')
-journaltext = res.content.decode('utf-8')
 
+# Download journal
+md,response = dbx.files_download('/journal/journal.txt')
+journaltext = response.content.decode('utf-8')
+
+# The main part, where we prepend the '#### YYYY-MM-DD ####' header to the journal
+delimiter = '####'
 addition = delimiter+' '+date.today().strftime("%A")+' '+str(date.today())+' '+delimiter+'\n'
-upload = addition+journaltext
+upload = addition+journaltext #we prepend today's header to the journal
 
-print(upload)
+# Upload to dropbox
 dbx.files_upload(upload.encode('utf-8'),'/journal/journal.txt',mode=dropbox.files.WriteMode.overwrite)
