@@ -9,7 +9,7 @@ import credentials
 import os
 import time
 os.environ['TZ'] = 'America/Los_Angeles'
-time.tzset()
+# time.tzset()
 
 # Dropbox login
 TOKEN = credentials.dropbox_token
@@ -29,7 +29,7 @@ header_regexresults = [x for x in header_regexresults_iterator]
 
 ## Create dictionary of entries, where each value is the text of an entry
 entries = {}
-for i in range(len(header_regexresults)):
+for i in range(len(header_regexresults)-1):
 	header_regexresult = header_regexresults[i]
 	entry_start_index = header_regexresult.end()+1 # Entry starts after its header
 
