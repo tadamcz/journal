@@ -16,7 +16,7 @@ TOKEN = credentials.dropbox_token
 dbx = dropbox.Dropbox(TOKEN)
 
 # Download journal
-md,response = dbx.files_download('/journal/journal.txt')
+md,response = dbx.files_download('/journal/journal.md')
 journaltext = response.content.decode('utf-8')
 
 
